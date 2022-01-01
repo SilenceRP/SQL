@@ -1,0 +1,152 @@
+
+
+ -- ##############################   ALTER  運用 ###########################3
+
+ -- 測試資料
+
+USE MLDATASET
+GO
+
+-- #### ----------------- 新增欄位 ----------------------------
+
+ALTER TABLE IRIS_TEST
+ADD 
+COL_1 VARCHAR(20) NULL,
+COL_2 VARCHAR(20) NULL
+GO
+
+-- #### ----------------- 刪除欄位 -------------------------------
+
+ALTER TABLE IRIS_TEST
+DROP COLUMN COL_1
+                             , COL_2 
+
+
+/*
+ALTER：可以新增、刪除TABLE的欄位，但不能用 ALTER 來重新命名欄位名稱
+*/
+
+EXEC sp_RENAME 'IRIS_TEST.COL_1', 'TEST', 'COLUMN' -- 如果要改名稱，要用此方法
+GO
+
+-- #### ---------------------------- 把資料過進新增欄位 COL_1
+
+UPDATE IRIS_TEST
+SET COL_1 = I.Species
+FROM IRIS AS I
+WHERE I.Species = IRIS_TEST.Species
+GO
+
+
+-- ## -------------------------------- 用INSERT INTO 會 APPEND 在原資料之後
+
+INSERT INTO IRIS_TEST
+                        (COL_2)
+SELECT I.Species
+FROM IRIS AS I
+GO
+
+
+ -- #### --------------------------- 新增流水號一
+
+ /*
+  identity(a,b)，ab均為正整數，a表示初始值，b表示增加數
+  就像IDENTITY(1,1)代表由1開始每次增加是1
+ */
+
+
+ -- 既有TABLE
+
+ ALTER TABLE TEST_IRIS
+ ADD ROWID INT IDENTITY(1,1)
+
+SELECT *
+FROM TEST_IRIS
+GO
+
+-- 查詢後的TABLE
+
+
+/*
+一、ROW_NUMBER依指定的欄位排序，並逐筆加上流水號ROWID
+        SELECT  ROW_NUMBER() OVER(ORDER BY CustomerID) AS ROWID 
+		            ,  * 
+		FROM Orders
+
+二、RANK依指定的欄位排序，相同的資料流水號相同，下一筆不同資料的流水號會【跳脫】
+        SELECT  RANK() OVER(ORDER BY CustomerID) AS ROWID 
+		              ,* 
+		FROM Orders
+
+三、DENSE_RANK依指定的欄位排序，相同的資料流水號相同，下一筆不同資料的流水號會【不跳脫】
+        SELECT  DENSE_RANK() OVER(ORDER BY CustomerID) AS ROWID 
+		              ,* 
+		FROM Orders
+
+四、分頁範例
+        SELECT * 
+		FROM ( SELECT ROW_NUMBER() OVER ( ORDER BY CustomerID ) AS ROWID
+		              ,* 
+					  FROM Orders ) AS tmp 
+		WHERE ROWID BETWEEN 21 AND 30 
+		ORDER BY CustomerID
+
+*/
+
+
+SELECT *
+		    , ROW_NUMBER() OVER(ORDER BY SPECIES ASC) AS '查詢後的ROWID'
+			-- 用ROW_NUMBER的方式來產生流水號
+FROM TEST_IRIS
+GO
+
+
+ALTER TABLE TEST_IRIS
+ADD V1 VARCHAR(10) NULL
+GO
+
+
+UPDATE TEST_IRIS 
+SET V1 = 'VERR'
+WHERE Species = 'versicolor'
+GO
+
+SELECT *
+FROM TEST_IRIS
+
+-- #############################################################
+
+
+
+
+-- ################################### UPDATE 修改資料 ################
+
+-- #### 創建資料
+SELECT B.CustomerId, B.CreditScore, B.Geography, B.Age, B.Exited
+INTO TEST_BANK
+FROM BANK AS B
+GO
+
+-- #### 新建欄位
+
+ALTER TABLE TEST_BANK
+ADD TAG VARCHAR(10)
+GO
+
+-- #### 修改資料
+
+UPDATE TEST_BANK
+SET TAG = 'VIP'
+FROM TEST_BANK AS T1
+             INNER JOIN (SELECT CustomerId
+                                      FROM BANK
+                                     WHERE CreditScore > 800) AS T2 on T1.CustomerId = T2.CustomerId
+GO
+
+-- #### 複驗資料
+SELECT *
+FROM TEST_BANK
+WHERE TAG IS NOT NULL
+GO
+
+
