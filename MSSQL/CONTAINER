@@ -1,0 +1,18 @@
+-- ######################## 將資料放入『容器』########################
+
+DECLARE 
+@IND VARCHAR(MAX) = '',
+@FIND VARCHAR(MAX)
+
+SELECT @IND = @IND + IIF(@IND = '', '', ',') + '''' + D.cut + ''''
+FROM DIAMONDS AS D
+WHERE D.cut <> 'Fair'
+GROUP BY D.cut
+
+SET @FIND = '(' + @IND + ')'
+PRINT @FIND
+
+EXEC ('SELECT *
+       FROM DIAMONDS
+       WHERE cut IN ' + @FIND )
+GO
